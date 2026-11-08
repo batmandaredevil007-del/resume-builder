@@ -94,7 +94,22 @@ def generate_resume_docx(data):
     r_sum.font.size = Pt(10.5)
     r_sum.font.color.rgb = DARK_NEUTRAL
 
-    # 3. Experience
+    # 3. Technical Skills (Moved above Experience)
+    add_heading("Technical Skills")
+    for cat, items in data["skills"]:
+        if not cat.strip() and not items.strip():
+            continue
+        psk = doc.add_paragraph()
+        psk.paragraph_format.space_after = Pt(3)
+        rc = psk.add_run(f"{cat}: ")
+        rc.font.name = "Calibri"
+        rc.font.bold = True
+        rc.font.size = Pt(10.5)
+        ri = psk.add_run(items)
+        ri.font.name = "Calibri"
+        ri.font.size = Pt(10.5)
+
+    # 4. Experience
     add_heading("Experience")
     for exp in data["experience"]:
         tbl = doc.add_table(rows=2, cols=2)
@@ -156,21 +171,6 @@ def generate_resume_docx(data):
                 rb.font.name = "Calibri"
                 rb.font.size = Pt(10.5)
 
-    # 4. Technical Skills
-    add_heading("Technical Skills")
-    for cat, items in data["skills"]:
-        if not cat.strip() and not items.strip():
-            continue
-        psk = doc.add_paragraph()
-        psk.paragraph_format.space_after = Pt(3)
-        rc = psk.add_run(f"{cat}: ")
-        rc.font.name = "Calibri"
-        rc.font.bold = True
-        rc.font.size = Pt(10.5)
-        ri = psk.add_run(items)
-        ri.font.name = "Calibri"
-        ri.font.size = Pt(10.5)
-
     # 5. Education
     add_heading("Education")
     for ed in data["education"]:
@@ -201,6 +201,11 @@ def generate_resume_docx(data):
 
 # --- PDF Generation Engine (Direct HTML to PDF) ---
 def generate_resume_pdf(data):
+    skills_html = ""
+    for cat, items in data["skills"]:
+        if cat.strip() or items.strip():
+            skills_html += f"<p style='margin: 3px 0;'><strong>{cat}:</strong> {items}</p>"
+
     bullets_html = ""
     for exp in data["experience"]:
         bullet_items = ""
@@ -227,11 +232,6 @@ def generate_resume_pdf(data):
             {bullet_items}
         </ul>
         """
-
-    skills_html = ""
-    for cat, items in data["skills"]:
-        if cat.strip() or items.strip():
-            skills_html += f"<p style='margin: 3px 0;'><strong>{cat}:</strong> {items}</p>"
 
     edu_html = ""
     for ed in data["education"]:
@@ -302,11 +302,11 @@ def generate_resume_pdf(data):
         <h2>Professional Summary</h2>
         <p style="margin: 0 0 8px 0; text-align: justify;">{data['summary']}</p>
 
-        <h2>Experience</h2>
-        {bullets_html}
-
         <h2>Technical Skills</h2>
         {skills_html}
+
+        <h2>Experience</h2>
+        {bullets_html}
 
         <h2>Education</h2>
         {edu_html}
@@ -340,6 +340,9 @@ with st.expander("👤 Contact Details", expanded=False):
 with st.expander("📝 Summary (Tailor for Job)", expanded=True):
     summary = st.text_area("Summary", value=stored.get("summary", ""), height=130)
 
+with st.expander("🛠️ Technical Skills", expanded=True):
+    skills_text = st.text_area("Skills (Format: Category: Skill 1, Skill 2)", value=stored.get("skills", ""), height=130)
+
 with st.expander("💼 Experience Details", expanded=False):
     exp_role = st.text_input("Role", value=stored.get("role", ""))
     exp_company = st.text_input("Company", value=stored.get("company", ""))
@@ -347,8 +350,7 @@ with st.expander("💼 Experience Details", expanded=False):
     exp_dates = st.text_input("Dates", value=stored.get("dates", ""))
     bullets_text = st.text_area("Bullets (1 per line)", value=stored.get("bullets", ""), height=180)
 
-with st.expander("🛠️ Skills & Education", expanded=False):
-    skills_text = st.text_area("Skills (Format: Category: Skill 1, Skill 2)", value=stored.get("skills", ""), height=130)
+with st.expander("🎓 Education", expanded=False):
     ed_degree = st.text_input("Degree", value=stored.get("degree", ""))
     ed_univ = st.text_input("Institution", value=stored.get("univ", ""))
     ed_dates = st.text_input("Period", value=stored.get("ed_dates", ""))
@@ -363,12 +365,12 @@ with col_save:
             "email": email,
             "linkedin_url": linkedin_url,
             "summary": summary,
+            "skills": skills_text,
             "role": exp_role,
             "company": exp_company,
             "location": exp_location,
             "dates": exp_dates,
             "bullets": bullets_text,
-            "skills": skills_text,
             "degree": ed_degree,
             "univ": ed_univ,
             "ed_dates": ed_dates,
@@ -398,6 +400,7 @@ resume_payload = {
         "linkedin_url": linkedin_url
     },
     "summary": summary,
+    "skills": parsed_skills,
     "experience": [
         {
             "role": exp_role,
@@ -407,7 +410,6 @@ resume_payload = {
             "bullets": parsed_bullets
         }
     ],
-    "skills": parsed_skills,
     "education": [
         {
             "degree": ed_degree,
